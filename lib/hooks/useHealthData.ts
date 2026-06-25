@@ -3,7 +3,10 @@ import useSWR, { type SWRConfiguration } from 'swr'
 
 async function fetcher(url: string) {
   const res = await fetch(url)
-  if (!res.ok) throw new Error('fetch failed')
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw Object.assign(new Error(body?.error ?? 'request_failed'), { status: res.status })
+  }
   return res.json()
 }
 
