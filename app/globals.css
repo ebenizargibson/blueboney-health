@@ -1,0 +1,193 @@
+@import "tailwindcss";
+
+:root {
+  /* ── Blue Boney Base ─────────────────────────────────── */
+  --bb-ink:         #0F172A;
+  --bb-ink-soft:    #64748B;
+  --bb-ink-muted:   #94A3B8;
+  --bb-surface:     #FFFFFF;
+  --bb-bg:          #F8FAFC;
+  --bb-bg2:         #F1F5F9;
+  --bb-border:      #E2E8F0;
+  --bb-blue:        #1D4ED8;
+  --bb-blue-light:  #EFF6FF;
+
+  /* ── Health Teal (primary health brand) ─────────────── */
+  --h-teal:         #0891B2;
+  --h-teal-light:   #ECFEFF;
+  --h-teal-mid:     #A5F3FC;
+  --h-teal-dark:    #164E63;
+  --h-teal-hover:   #0E7490;
+
+  /* ── Semantic Status ─────────────────────────────────── */
+  --h-success:      #059669;
+  --h-success-bg:   #ECFDF5;
+  --h-warning:      #D97706;
+  --h-warning-bg:   #FFFBEB;
+  --h-danger:       #DC2626;
+  --h-danger-bg:    #FEF2F2;
+  --h-critical:     #9F1239;
+  --h-critical-bg:  #FFF1F2;
+  --h-info:         #0284C7;
+  --h-info-bg:      #F0F9FF;
+  --h-neutral:      #475569;
+  --h-neutral-bg:   #F1F5F9;
+
+  /* ── Lab Result Colors ───────────────────────────────── */
+  --lab-normal:     #059669;
+  --lab-high:       #DC2626;
+  --lab-low:        #D97706;
+  --lab-critical:   #9F1239;
+
+  /* ── Layout ──────────────────────────────────────────── */
+  --sidebar-w:      260px;
+  --topbar-h:       64px;
+
+  /* ── Shape & Shadow ──────────────────────────────────── */
+  --radius-sm:  6px;
+  --radius:     10px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  20px;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.06);
+  --shadow:     0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:  0 10px 30px rgba(0,0,0,0.10);
+  --shadow-xl:  0 20px 40px rgba(0,0,0,0.12);
+}
+
+/* ── shadcn/ui CSS variable aliases ─────────────────────── */
+:root {
+  --background:         var(--bb-bg);
+  --foreground:         var(--bb-ink);
+  --card:               var(--bb-surface);
+  --card-foreground:    var(--bb-ink);
+  --popover:            var(--bb-surface);
+  --popover-foreground: var(--bb-ink);
+  --primary:            var(--h-teal);
+  --primary-foreground: #FFFFFF;
+  --secondary:          var(--bb-bg2);
+  --secondary-foreground: var(--bb-ink);
+  --muted:              var(--bb-bg2);
+  --muted-foreground:   var(--bb-ink-soft);
+  --accent:             var(--h-teal-light);
+  --accent-foreground:  var(--h-teal-dark);
+  --destructive:        var(--h-danger);
+  --border:             var(--bb-border);
+  --input:              var(--bb-border);
+  --ring:               var(--h-teal);
+  --radius:             10px;
+}
+
+/* ── Base ────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bb-bg);
+  color: var(--bb-ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── Typography ──────────────────────────────────────────── */
+.font-mono { font-family: 'DM Mono', 'Fira Mono', monospace; }
+
+h1 { font-size: 28px; font-weight: 700; line-height: 1.3; color: var(--bb-ink); }
+h2 { font-size: 22px; font-weight: 700; line-height: 1.3; color: var(--bb-ink); }
+h3 { font-size: 17px; font-weight: 600; line-height: 1.4; color: var(--bb-ink); }
+h4 { font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--bb-ink); }
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bb-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--bb-ink-muted); }
+
+/* ── Utility classes ─────────────────────────────────────── */
+.text-ink       { color: var(--bb-ink); }
+.text-ink-soft  { color: var(--bb-ink-soft); }
+.text-ink-muted { color: var(--bb-ink-muted); }
+.text-teal      { color: var(--h-teal); }
+.text-success   { color: var(--h-success); }
+.text-warning   { color: var(--h-warning); }
+.text-danger    { color: var(--h-danger); }
+.text-critical  { color: var(--h-critical); }
+
+.bg-surface { background: var(--bb-surface); }
+.bg-bg      { background: var(--bb-bg); }
+.bg-bg2     { background: var(--bb-bg2); }
+.bg-teal    { background: var(--h-teal); }
+
+.border-base { border-color: var(--bb-border); }
+
+/* ── Card base ───────────────────────────────────────────── */
+.card {
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Status chip variants ────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.chip-success  { background: var(--h-success-bg); color: var(--h-success); }
+.chip-warning  { background: var(--h-warning-bg); color: var(--h-warning); }
+.chip-danger   { background: var(--h-danger-bg);  color: var(--h-danger); }
+.chip-critical { background: var(--h-critical-bg); color: var(--h-critical); }
+.chip-info     { background: var(--h-info-bg);    color: var(--h-info); }
+.chip-neutral  { background: var(--h-neutral-bg); color: var(--h-neutral); }
+.chip-teal     { background: var(--h-teal-light); color: var(--h-teal-dark); }
+
+/* ── Alert banners ───────────────────────────────────────── */
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border-width: 1px;
+  border-style: solid;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.alert-danger   { background: var(--h-danger-bg);   border-color: var(--h-danger);   color: var(--h-danger); }
+.alert-warning  { background: var(--h-warning-bg);  border-color: var(--h-warning);  color: var(--h-warning); }
+.alert-info     { background: var(--h-info-bg);     border-color: var(--h-info);     color: var(--h-info); }
+.alert-success  { background: var(--h-success-bg);  border-color: var(--h-success);  color: var(--h-success); }
+.alert-critical { background: var(--h-critical-bg); border-color: var(--h-critical); color: var(--h-critical); }
+.alert-teal     { background: var(--h-teal-light);  border-color: var(--h-teal-mid); color: var(--h-teal-dark); }
+
+/* ── Loading skeleton ────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--bb-bg2) 25%, var(--bb-border) 50%, var(--bb-bg2) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Teal gradient (wallet card etc) ────────────────────── */
+.teal-gradient {
+  background: linear-gradient(135deg, var(--h-teal) 0%, var(--h-teal-dark) 100%);
+  color: #fff;
+}
+
+/* ── Focus ring ──────────────────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid var(--h-teal);
+  outline-offset: 2px;
+}
