@@ -1,20 +1,46 @@
 'use client'
-import { Activity, Target, TrendingUp, Plus, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
+import { Activity, Target, TrendingUp, Plus, ChevronRight, X } from 'lucide-react'
 import Link from 'next/link'
 import { VitalCard } from '@/components/health/VitalCard'
 import { MetricChart } from '@/components/health/MetricChart'
 import { EmptyHealthState } from '@/components/health/EmptyHealthState'
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useHealthData } from '@/lib/hooks/useHealthData'
+import { patientApi } from '@/lib/api'
 
 interface WellnessLog { log_date: string; weight_kg?: number; systolic_bp?: number; diastolic_bp?: number; heart_rate?: number; sleep_hours?: number; steps?: number; mood?: string }
 interface Goal { id: string; goal_type: string; title: string; target_value?: number; current_value?: number; target_unit?: string; status: string; progress_pct?: number }
 
 export default function WellnessPage() {
+  const [showGoalModal, setShowGoalModal] = useState(false)
+  const [goalTitle, setGoalTitle]         = useState('')
+  const [goalType, setGoalType]           = useState('weight')
+  const [goalTarget, setGoalTarget]       = useState('')
+  const [goalUnit, setGoalUnit]           = useState('')
+  const [savingGoal, setSavingGoal]       = useState(false)
+
   const { data: logData, isLoading: logLoading } = useHealthData<{ logs: WellnessLog[] }>(
     '/health/wellness/logs', { limit: 30 },
   )
-  const { data: goalData, isLoading: goalLoading } = useHealthData<{ goals: Goal[] }>('/health/wellness/goals')
+  const { data: goalData, isLoading: goalLoading, mutate: mutateGoals } = useHealthData<{ goals: Goal[] }>('/health/wellness/goals')
+
+  const handleAddGoal = async () => {
+    if (!goalTitle) return
+    setSavingGoal(true)
+    try {
+      await patientApi.createGoal({
+        goal_type:    goalType,
+        title:        goalTitle,
+        target_value: goalTarget ? Number(goalTarget) : undefined,
+        target_unit:  goalUnit || undefined,
+      })
+      setShowGoalModal(false)
+      setGoalTitle(''); setGoalTarget(''); setGoalUnit('')
+      mutateGoals()
+    } catch { /* swallow — user can retry */ }
+    setSavingGoal(false)
+  }
 
   const logs  = (logData?.logs ?? []).sort((a, b) => a.log_date.localeCompare(b.log_date))
   const goals = goalData?.goals ?? []
@@ -58,7 +84,8 @@ export default function WellnessPage() {
       <section>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-[15px] font-bold text-[var(--bb-ink)]">Health Goals</h2>
-          <button className="text-[12px] text-[var(--h-teal)] font-medium hover:underline flex items-center gap-0.5">
+          <button onClick={() => setShowGoalModal(true)}
+            className="text-[12px] text-[var(--h-teal)] font-medium hover:underline flex items-center gap-0.5">
             Add Goal <ChevronRight size={12} />
           </button>
         </div>
@@ -109,6 +136,61 @@ export default function WellnessPage() {
             )}
           </div>
         </section>
+      )}
+
+      {/* Add Goal modal */}
+      {showGoalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
+          <div className="bg-white rounded-[16px] border border-[var(--bb-border)] shadow-[var(--shadow-lg)] w-full max-w-[400px] p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[17px] font-bold text-[var(--bb-ink)]">New Health Goal</h2>
+              <button onClick={() => setShowGoalModal(false)} className="text-[var(--bb-ink-muted)] hover:text-[var(--bb-ink)]">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-[12px] font-semibold text-[var(--bb-ink-soft)] uppercase tracking-wide mb-1.5">Goal Type</label>
+              <select value={goalType} onChange={e => setGoalType(e.target.value)}
+                className="w-full h-10 px-3 rounded-[8px] border border-[var(--bb-border)] bg-[var(--bb-bg)] text-[13px] text-[var(--bb-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--h-teal)]">
+                {['weight','steps','sleep','exercise','nutrition','blood_pressure','medication','other'].map(t => (
+                  <option key={t} value={t}>{t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[12px] font-semibold text-[var(--bb-ink-soft)] uppercase tracking-wide mb-1.5">Goal Title</label>
+              <input value={goalTitle} onChange={e => setGoalTitle(e.target.value)}
+                placeholder="e.g. Reach 75 kg body weight"
+                className="w-full h-10 px-3 rounded-[8px] border border-[var(--bb-border)] bg-[var(--bb-bg)] text-[13px] text-[var(--bb-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--h-teal)]" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[12px] font-semibold text-[var(--bb-ink-soft)] uppercase tracking-wide mb-1.5">Target Value</label>
+                <input type="number" value={goalTarget} onChange={e => setGoalTarget(e.target.value)} placeholder="75"
+                  className="w-full h-10 px-3 rounded-[8px] border border-[var(--bb-border)] bg-[var(--bb-bg)] text-[13px] text-[var(--bb-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--h-teal)]" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-[var(--bb-ink-soft)] uppercase tracking-wide mb-1.5">Unit</label>
+                <input value={goalUnit} onChange={e => setGoalUnit(e.target.value)} placeholder="kg"
+                  className="w-full h-10 px-3 rounded-[8px] border border-[var(--bb-border)] bg-[var(--bb-bg)] text-[13px] text-[var(--bb-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--h-teal)]" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setShowGoalModal(false)}
+                className="flex-1 h-10 rounded-[8px] border border-[var(--bb-border)] text-[13px] font-medium text-[var(--bb-ink)] hover:bg-[var(--bb-bg2)] transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleAddGoal} disabled={!goalTitle || savingGoal}
+                className="flex-1 h-10 rounded-[8px] bg-[var(--h-teal)] text-white text-[13px] font-bold hover:bg-[var(--h-teal-hover)] transition-colors disabled:opacity-60">
+                {savingGoal ? 'Saving…' : 'Save Goal'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

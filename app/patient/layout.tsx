@@ -4,10 +4,16 @@ import { PatientSidebar } from '@/components/layout/PatientSidebar'
 import { PatientTopBar } from '@/components/layout/PatientTopBar'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { usePatientSession } from '@/lib/hooks/usePatientSession'
+import { useHealthData } from '@/lib/hooks/useHealthData'
 
 export default function PatientLayout({ children }: { children: React.ReactNode }) {
   const { session, loading } = usePatientSession()
-  const [sidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  const { data: msgData } = useHealthData<{ threads: { unread_count?: number }[] }>(
+    session ? '/health/messages/threads' : null,
+  )
+  const unreadMessages = (msgData?.threads ?? []).reduce((n, t) => n + (t.unread_count ?? 0), 0)
 
   if (loading) {
     return (
@@ -26,13 +32,17 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     <div className="min-h-screen bg-[var(--bb-bg)]">
       {/* Desktop sidebar */}
       <div className="hidden md:block">
-        <PatientSidebar />
+        <PatientSidebar
+          collapsed={sidebarCollapsed}
+          onCollapse={setSidebarCollapsed}
+          unreadMessages={unreadMessages}
+        />
       </div>
 
       {/* Top bar */}
       <PatientTopBar session={session} sidebarCollapsed={sidebarCollapsed} />
 
-      {/* Page content */}
+      {/* Page content — margin tracks sidebar width */}
       <main
         className="pt-16 pb-20 md:pb-6 transition-all duration-200"
         style={{ marginLeft: sidebarCollapsed ? 64 : 260 }}

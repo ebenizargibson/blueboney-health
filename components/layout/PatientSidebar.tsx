@@ -3,11 +3,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Calendar, Search, Video, MessageSquare, FileText,
-  FlaskConical, Pill, CreditCard, Shield, Wallet, Users, FolderOpen,
-  Activity, AlertTriangle, Settings, ChevronLeft, ChevronRight, Heart,
+  FlaskConical, ScanLine, Pill, CreditCard, Shield, Wallet, Users, FolderOpen,
+  Activity, AlertTriangle, Settings, Sparkles, ChevronLeft, ChevronRight, Heart,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
-import { useState } from 'react'
 
 const NAV = [
   { href: '/patient',              icon: LayoutDashboard, label: 'Dashboard' },
@@ -18,6 +17,7 @@ const NAV = [
   null, // divider
   { href: '/patient/records',      icon: FileText,        label: 'Records' },
   { href: '/patient/labs',         icon: FlaskConical,    label: 'Lab Results' },
+  { href: '/patient/imaging',      icon: ScanLine,        label: 'Imaging' },
   { href: '/patient/medications',  icon: Pill,            label: 'Medications' },
   null,
   { href: '/patient/billing',      icon: CreditCard,      label: 'Billing' },
@@ -27,6 +27,7 @@ const NAV = [
   { href: '/patient/family',       icon: Users,           label: 'Family' },
   { href: '/patient/documents',    icon: FolderOpen,      label: 'Documents' },
   { href: '/patient/wellness',     icon: Activity,        label: 'Wellness' },
+  { href: '/patient/ai',          icon: Sparkles,        label: 'Health AI' },
   { href: '/patient/emergency',    icon: AlertTriangle,   label: 'Emergency' },
   null,
   { href: '/patient/settings',     icon: Settings,        label: 'Settings' },
@@ -34,11 +35,12 @@ const NAV = [
 
 interface Props {
   unreadMessages?: number
+  collapsed?: boolean
+  onCollapse?: (v: boolean) => void
 }
 
-export function PatientSidebar({ unreadMessages = 0 }: Props) {
+export function PatientSidebar({ unreadMessages = 0, collapsed = false, onCollapse }: Props) {
   const pathname  = usePathname()
-  const [collapsed, setCollapsed] = useState(false)
 
   return (
     <aside
@@ -100,7 +102,7 @@ export function PatientSidebar({ unreadMessages = 0 }: Props) {
 
       {/* Collapse button */}
       <button
-        onClick={() => setCollapsed(c => !c)}
+        onClick={() => onCollapse?.(!collapsed)}
         className="flex items-center justify-center h-10 border-t border-[var(--bb-border)] text-[var(--bb-ink-muted)] hover:bg-[var(--bb-bg2)] hover:text-[var(--bb-ink)] transition-colors"
       >
         {collapsed ? <ChevronRight size={16} /> : <><ChevronLeft size={16} /><span className="text-[12px] ml-1">Collapse</span></>}

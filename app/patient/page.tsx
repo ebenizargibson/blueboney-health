@@ -1,4 +1,6 @@
 'use client'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Calendar, MessageSquare, RefreshCw, CreditCard, FileText, FlaskConical, Pill, Heart, ChevronRight, AlertTriangle, TrendingUp, Users, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { AppointmentCard } from '@/components/health/AppointmentCard'
@@ -11,8 +13,13 @@ import { usePatientSession } from '@/lib/hooks/usePatientSession'
 import { formatCurrency, formatRelative } from '@/lib/utils/formatters'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { session } = usePatientSession()
-  const { data: status, isLoading } = useHealthData<{ health_activated: boolean; profile?: { first_name?: string } }>('/health/status')
+  const { data: status, isLoading } = useHealthData<{ activated: boolean; profile?: { first_name?: string } }>('/health/status')
+
+  useEffect(() => {
+    if (status && !status.activated) router.replace('/patient/activate')
+  }, [status, router])
   const { data: apptData } = useHealthData<{ appointments: unknown[] }>('/health/appointments', { status: 'confirmed', limit: '1' })
   const { data: msgData } = useHealthData<{ threads: { id: string; subject: string; last_message?: string; updated_at: string; unread_count?: number; provider?: { name: string } }[] }>('/health/messages/threads')
   const { data: labData } = useHealthData<{ orders: { id: string; test_name: string; status: string; resulted_at?: string; results?: { test_name: string; value: string; unit: string; reference_range?: string; interpretation?: string }[] }[] }>('/health/labs', { limit: '3' })
@@ -20,6 +27,8 @@ export default function DashboardPage() {
   const { data: walletData } = useHealthData<{ wallet?: { balance: number; currency: string } }>('/health/wallet')
 
   if (isLoading) return <DashboardSkeleton />
+
+  if (!status?.activated && !isLoading) return null // redirecting to /patient/activate
 
   const firstName = status?.profile?.first_name ?? session?.fullName.split(' ')[0] ?? 'there'
   const hour = new Date().getHours()
@@ -215,7 +224,7 @@ export default function DashboardPage() {
               type="tip"
               title="Blue Boney AI"
               message="Ask your care AI any health question — powered by Claude AI."
-              action={{ label: 'Start Chat', href: '/patient/records' }}
+              action={{ label: 'Start Chat', href: '/patient/ai' }}
             />
             {unreadCount > 0 && (
               <InsightCard
