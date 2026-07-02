@@ -1,6 +1,8 @@
 'use client'
 import { useState, useRef } from 'react'
-import { FolderOpen, Upload, Download, Trash2, FileText, Image as ImageIcon, File } from 'lucide-react'
+import { FolderOpen, Upload, Download, FileText, Image as ImageIcon, File } from 'lucide-react'
+import { useToast } from '@/lib/hooks/useToast'
+import { ToastContainer } from '@/lib/hooks/useToast'
 import { EmptyHealthState } from '@/components/health/EmptyHealthState'
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useHealthData } from '@/lib/hooks/useHealthData'
@@ -21,6 +23,8 @@ function DocIcon({ name }: { name: string }) {
 
 export default function DocumentsPage() {
   const [cat, setCat] = useState('All')
+  const { toasts, toast } = useToast()
+  const [uploading, setUploading] = useState(false)
   const { data, isLoading, mutate } = useHealthData<{ documents: Doc[] }>(
     '/health/records/documents',
     cat !== 'All' ? { category: cat } : undefined,
@@ -31,21 +35,48 @@ export default function DocumentsPage() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    // In production, upload to Supabase Storage first, then record the URL
-    // For now: show the filename as a placeholder
-    alert(`Upload feature: "${file.name}" would be uploaded to Supabase Storage and recorded via /health/records/documents`)
+    // Reset input so same file can be re-uploaded if needed
+    e.target.value = ''
+    setUploading(true)
+    try {
+      // Read file as base64
+      const content = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const result = reader.result as string
+          // Strip the data URL prefix (e.g. "data:application/pdf;base64,")
+          resolve(result.split(',')[1])
+        }
+        reader.onerror = () => reject(new Error('Failed to read file'))
+        reader.readAsDataURL(file)
+      })
+
+      await patientApi.uploadDocument({
+        file_name:         file.name,
+        content,
+        document_category: 'other',
+      })
+
+      toast(`"${file.name}" uploaded successfully`, 'success')
+      mutate()
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Upload failed', 'error')
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
     <div className="space-y-5">
+      <ToastContainer toasts={toasts} />
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-[22px] font-bold text-[var(--bb-ink)]">Documents</h1>
           <p className="text-[13px] text-[var(--bb-ink-soft)]">Your health documents and files</p>
         </div>
-        <button onClick={() => inputRef.current?.click()}
-          className="flex items-center gap-1.5 h-10 px-4 rounded-[10px] bg-[var(--h-teal)] text-white text-[13px] font-semibold hover:bg-[var(--h-teal-hover)] transition-colors">
-          <Upload size={15} /> Upload
+        <button onClick={() => inputRef.current?.click()} disabled={uploading}
+          className="flex items-center gap-1.5 h-10 px-4 rounded-[10px] bg-[var(--h-teal)] text-white text-[13px] font-semibold hover:bg-[var(--h-teal-hover)] transition-colors disabled:opacity-60">
+          <Upload size={15} /> {uploading ? 'Uploading…' : 'Upload'}
         </button>
         <input ref={inputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.gif" onChange={handleUpload} />
       </div>

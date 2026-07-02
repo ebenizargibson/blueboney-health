@@ -1,6 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { FileText, Download, Lock, Activity } from 'lucide-react'
+import { useToast } from '@/lib/hooks/useToast'
+import { ToastContainer } from '@/lib/hooks/useToast'
 import { TimelineEvent } from '@/components/health/TimelineEvent'
 import { EmptyHealthState } from '@/components/health/EmptyHealthState'
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -20,6 +22,7 @@ interface Observation  { id: string; observation_type?: string; observation_name
 
 export default function RecordsPage() {
   const [exporting, setExporting] = useState(false)
+  const { toasts, toast } = useToast()
 
   const { data: encData,  error: encErr,  isLoading: encLoading,  mutate: encMutate  } = useHealthData<{ encounters: Encounter[] }>('/health/records/encounters', { limit: 20 })
   const { data: condData, error: condErr, isLoading: condLoading, mutate: condMutate } = useHealthData<{ conditions: Condition[] }>('/health/records/conditions')
@@ -41,13 +44,17 @@ export default function RecordsPage() {
     setExporting(true)
     try {
       await patientApi.exportRecords({ format: 'json', include: ['encounters', 'observations', 'conditions', 'medications', 'labs'] })
-      alert('Export requested. You will receive a download link via message within 24 hours.')
-    } catch {/* swallow */}
-    setExporting(false)
+      toast('Export requested. You will receive a download link via message within 24 hours.', 'success')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Export request failed', 'error')
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
     <div className="space-y-5">
+      <ToastContainer toasts={toasts} />
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-[22px] font-bold text-[var(--bb-ink)]">Health Records</h1>
