@@ -3,6 +3,10 @@ import useSWR, { type SWRConfiguration } from 'swr'
 
 async function fetcher(url: string) {
   const res = await fetch(url)
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') window.location.href = '/login'
+    throw Object.assign(new Error('Session expired'), { status: 401 })
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw Object.assign(new Error(body?.error ?? 'request_failed'), { status: res.status })

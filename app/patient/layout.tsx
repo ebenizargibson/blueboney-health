@@ -42,10 +42,9 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       {/* Top bar */}
       <PatientTopBar session={session} sidebarCollapsed={sidebarCollapsed} />
 
-      {/* Page content — margin tracks sidebar width */}
+      {/* Page content — margin tracks sidebar width on md+; no margin on mobile */}
       <main
-        className="pt-16 pb-20 md:pb-6 transition-all duration-200"
-        style={{ marginLeft: sidebarCollapsed ? 64 : 260 }}
+        className={`pt-16 pb-20 md:pb-6 transition-all duration-200 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-[260px]'}`}
       >
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
           {children}

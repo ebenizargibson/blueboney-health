@@ -8,6 +8,7 @@ import { CardSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useHealthData } from '@/lib/hooks/useHealthData'
 import { patientApi } from '@/lib/api'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { useToast, ToastContainer } from '@/lib/hooks/useToast'
 
 function uuid() { return Math.random().toString(36).slice(2) + Date.now().toString(36) }
 
@@ -26,6 +27,7 @@ export default function BookAppointmentPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const { toasts, toast } = useToast()
 
   const { data: providerData, isLoading: loadingProviders } = useHealthData<{ providers: Provider[] }>(
     '/health/providers',
@@ -57,6 +59,7 @@ export default function BookAppointmentPage() {
         duration_minutes: 30,
         chief_complaint:  complaint,
       }, uuid())
+      toast('Appointment booked successfully!', 'success')
       router.push('/patient/appointments')
     } catch (e: any) {
       setError(e.message ?? 'Booking failed. Please try again.')
@@ -222,6 +225,7 @@ export default function BookAppointmentPage() {
           </div>
         </div>
       )}
+      <ToastContainer toasts={toasts} />
     </div>
   )
 }
