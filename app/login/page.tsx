@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Heart, Phone, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { portalAuth } from '@/lib/api'
 
@@ -15,11 +15,13 @@ export default function LoginPage() {
   const [error,     setError]     = useState('')
   const [loading,   setLoading]   = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const from = searchParams.get('from') ?? '/patient'
 
   // Redirect if already logged in
   useEffect(() => {
     portalAuth.session().then((res: { session: unknown }) => {
-      if (res.session) router.push('/patient')
+      if (res.session) router.push(from)
     }).catch(() => {})
   }, [router])
 
@@ -35,7 +37,7 @@ export default function LoginPage() {
         setPhoneMasked(res.phone_masked)
         setStep('otp')
       } else if (res.success) {
-        router.push('/patient')
+        router.push(from)
       }
     } catch {
       setError('Network error. Please try again.')
@@ -52,7 +54,7 @@ export default function LoginPage() {
         setError(res.error === 'invalid_otp' ? 'Incorrect code. Please try again.' : res.error === 'otp_expired' ? 'Code expired. Please start over.' : res.error)
         if (res.error === 'otp_expired') { setStep('credentials'); setOtp(''); setTempToken('') }
       } else if (res.success) {
-        router.push('/patient')
+        router.push(from)
       }
     } catch {
       setError('Network error. Please try again.')
