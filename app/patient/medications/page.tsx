@@ -44,14 +44,14 @@ function ReminderDialog({ rx, onClose }: { rx: Rx; onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div role="dialog" aria-modal="true" aria-label="Set medication reminder" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="bg-white w-full max-w-sm rounded-[16px] overflow-hidden shadow-xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--bb-border)]">
           <div className="flex items-center gap-2">
             <Bell size={16} className="text-[var(--h-teal)]" />
             <span className="text-[14px] font-semibold text-[var(--bb-ink)]">Set Reminder</span>
           </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-full hover:bg-[var(--bb-bg2)] flex items-center justify-center">
+          <button onClick={onClose} aria-label="Close reminder dialog" className="w-7 h-7 rounded-full hover:bg-[var(--bb-bg2)] flex items-center justify-center">
             <X size={14} className="text-[var(--bb-ink-soft)]" />
           </button>
         </div>
@@ -70,7 +70,7 @@ function ReminderDialog({ rx, onClose }: { rx: Rx; onClose: () => void }) {
                 <input type="time" value={t} onChange={e => setTime(i, e.target.value)}
                   className="flex-1 h-9 rounded-[8px] border border-[var(--bb-border)] px-3 text-[13px] text-[var(--bb-ink)] focus:outline-none focus:ring-1 focus:ring-[var(--h-teal)]" />
                 {times.length > 1 && (
-                  <button onClick={() => removeTime(i)} className="w-7 h-7 rounded-full hover:bg-red-50 flex items-center justify-center">
+                  <button onClick={() => removeTime(i)} aria-label="Remove reminder time" className="w-7 h-7 rounded-full hover:bg-red-50 flex items-center justify-center">
                     <X size={12} className="text-[var(--h-danger)]" />
                   </button>
                 )}

@@ -247,26 +247,31 @@ export default function TelehealthSessionPage({ params }: { params: Promise<{ se
       {/* Controls */}
       <div className="bg-[#0F1923] py-5 flex items-center justify-center gap-4 border-t border-white/10">
         <button onClick={toggleMic}
+          aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
           className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${micOn ? 'bg-white/15 hover:bg-white/25' : 'bg-[var(--h-danger)]'}`}>
           {micOn ? <Mic size={20} color="white" /> : <MicOff size={20} color="white" />}
         </button>
 
         <button onClick={toggleCam}
+          aria-label={camOn ? 'Turn off camera' : 'Turn on camera'}
           className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${camOn ? 'bg-white/15 hover:bg-white/25' : 'bg-[var(--h-danger)]'}`}>
           {camOn ? <Video size={20} color="white" /> : <VideoOff size={20} color="white" />}
         </button>
 
         <button onClick={handleEndCall} disabled={ending}
+          aria-label="End call"
           className="w-14 h-14 rounded-full bg-[var(--h-danger)] flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg disabled:opacity-60">
           <PhoneOff size={22} color="white" />
         </button>
 
         <button onClick={() => setShowChat(c => !c)}
+          aria-label={showChat ? 'Close chat' : 'Open chat'}
           className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${showChat ? 'bg-[var(--h-teal)]' : 'bg-white/15 hover:bg-white/25'}`}>
           <MessageSquare size={20} color="white" />
         </button>
 
-        <button className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors">
+        <button aria-label="Call settings"
+          className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors">
           <Settings size={20} color="white" />
         </button>
       </div>

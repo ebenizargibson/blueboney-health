@@ -140,11 +140,11 @@ export default function WellnessPage() {
 
       {/* Add Goal modal */}
       {showGoalModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
+        <div role="dialog" aria-modal="true" aria-label="Add health goal" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
           <div className="bg-white rounded-[16px] border border-[var(--bb-border)] shadow-[var(--shadow-lg)] w-full max-w-[400px] p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-[17px] font-bold text-[var(--bb-ink)]">New Health Goal</h2>
-              <button onClick={() => setShowGoalModal(false)} className="text-[var(--bb-ink-muted)] hover:text-[var(--bb-ink)]">
+              <button onClick={() => setShowGoalModal(false)} aria-label="Close goal dialog" className="text-[var(--bb-ink-muted)] hover:text-[var(--bb-ink)]">
                 <X size={18} />
               </button>
             </div>
