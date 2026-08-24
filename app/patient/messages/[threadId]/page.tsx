@@ -13,7 +13,16 @@ interface Thread { id: string; subject: string; thread_type?: string; status?: s
 
 export default function ThreadPage({ params }: { params: Promise<{ threadId: string }> }) {
   const { threadId } = use(params)
-  const { data, isLoading, mutate } = useHealthData<{ thread: Thread }>(`/health/messages/threads/${threadId}`)
+  // Refresh every 15s. The realtime subscription below cannot deliver: its
+  // Supabase client is built with the anon key and no session is ever attached,
+  // so it subscribes as `anon` — and realtime honours RLS exactly as the REST
+  // API does, where anon reads no rows of health_messages. Verified against
+  // production: the channel reports SUBSCRIBED and no event ever arrives.
+  const { data, isLoading, mutate } = useHealthData<{ thread: Thread }>(
+    `/health/messages/threads/${threadId}`,
+    undefined,
+    { refreshInterval: 15_000 },
+  )
   const [messages, setMessages] = useState<Message[]>([])
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
@@ -21,7 +30,15 @@ export default function ThreadPage({ params }: { params: Promise<{ threadId: str
   const thread = data?.thread
 
   useEffect(() => { if (thread?.messages) setMessages(thread.messages) }, [thread])
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  // Follow the conversation only when it actually grows. Each refresh replaces
+  // the array, so scrolling on every change would pull the reader to the bottom
+  // every fifteen seconds while they read something further up.
+  const lastCount = useRef(0)
+  useEffect(() => {
+    if (messages.length > lastCount.current) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    lastCount.current = messages.length
+  }, [messages])
 
   useRealtimeMessages(threadId, (msg) => {
     setMessages(prev => [...prev, msg as Message])
