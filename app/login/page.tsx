@@ -1,10 +1,10 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Heart, Phone, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { portalAuth } from '@/lib/api'
 
-export default function LoginPage() {
+function LoginForm() {
   const [step, setStep] = useState<'credentials' | 'otp'>('credentials')
   const [phone,     setPhone]     = useState('')
   const [password,  setPassword]  = useState('')
@@ -161,5 +161,19 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+/**
+ * useSearchParams() opts this route out of prerendering. Without a Suspense
+ * boundary Next fails the /login prerender and aborts the whole build, so the
+ * patient portal produced no deployable output at all. Fifth instance of this
+ * exact bug across the estate, after clinic, lab, pharmacy and provider.
+ */
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   )
 }
