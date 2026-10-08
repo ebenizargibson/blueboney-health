@@ -1,5 +1,6 @@
 'use client'
 import useSWR, { type SWRConfiguration } from 'swr'
+import { refusalIn, reportAccessRefused, type HealthRequestError } from '@/lib/accessRefused'
 
 async function fetcher(url: string) {
   const res = await fetch(url)
@@ -9,7 +10,12 @@ async function fetcher(url: string) {
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw Object.assign(new Error(body?.error ?? 'request_failed'), { status: res.status })
+    const refusal = refusalIn(res.status, body)
+    if (refusal) reportAccessRefused(refusal)
+    const err: HealthRequestError = Object.assign(
+      new Error(refusal?.message ?? body?.message ?? body?.error ?? 'request_failed'),
+      { status: res.status, code: body?.code, refusal: refusal ?? undefined })
+    throw err
   }
   return res.json()
 }
@@ -26,6 +32,9 @@ export function useHealthData<T = unknown>(
   const { data, error, isLoading, mutate } = useSWR<T>(key, fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 10_000,
+    // A 4xx is an answer, not a blip. Retrying a refusal would ask the backend
+    // again every few seconds, and every refused ask is audited.
+    shouldRetryOnError: (err: HealthRequestError) => !(err.status && err.status >= 400 && err.status < 500),
     ...opts,
   })
   return { data, error, isLoading, mutate }

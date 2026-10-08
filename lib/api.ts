@@ -1,4 +1,5 @@
 'use client'
+import { refusalIn, reportAccessRefused } from '@/lib/accessRefused'
 
 const BASE = '/api/proxy'
 
@@ -13,7 +14,12 @@ async function req<T = unknown>(method: string, path: string, body?: unknown, he
     throw new Error('Session expired')
   }
   const data = await res.json()
-  if (!res.ok) throw Object.assign(new Error(data?.error ?? 'request_failed'), { status: res.status, data })
+  if (!res.ok) {
+    const refusal = refusalIn(res.status, data)
+    if (refusal) reportAccessRefused(refusal)
+    throw Object.assign(new Error(refusal?.message ?? data?.message ?? data?.error ?? 'request_failed'),
+      { status: res.status, code: data?.code, data, refusal: refusal ?? undefined })
+  }
   return data as T
 }
 
