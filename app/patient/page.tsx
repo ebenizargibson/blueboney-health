@@ -11,6 +11,7 @@ import { DashboardSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useHealthData } from '@/lib/hooks/useHealthData'
 import { usePatientSession } from '@/lib/hooks/usePatientSession'
 import { formatCurrency, formatRelative } from '@/lib/utils/formatters'
+import { isPending, labOrderTitle, type LabOrder } from '@/lib/utils/results'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -22,7 +23,7 @@ export default function DashboardPage() {
   }, [status, router])
   const { data: apptData } = useHealthData<{ appointments: unknown[] }>('/health/appointments', { status: 'confirmed', limit: '1' })
   const { data: msgData } = useHealthData<{ threads: { id: string; subject: string; last_message?: string; updated_at: string; unread_count?: number; provider?: { name: string } }[] }>('/health/messages/threads')
-  const { data: labData } = useHealthData<{ orders: { id: string; test_name: string; status: string; resulted_at?: string; results?: { test_name: string; value: string; unit: string; reference_range?: string; interpretation?: string }[] }[] }>('/health/labs', { limit: '3' })
+  const { data: labData } = useHealthData<{ orders: LabOrder[] }>('/health/labs', { limit: '3' })
   const { data: rxData } = useHealthData<{ prescriptions: { id: string; medication_name: string; status: string; refills_remaining?: number }[] }>('/health/prescriptions', { status: 'active', limit: '5' })
   const { data: walletData } = useHealthData<{ wallet?: { balance: number; currency: string } }>('/health/wallet')
 
@@ -143,17 +144,21 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="bg-white rounded-[12px] border border-[var(--bb-border)]">
-            {labOrders.length > 0
+            {labOrders.some(o => (o.health_lab_results ?? []).length > 0)
               ? labOrders.flatMap(order =>
-                  (order.results ?? []).slice(0, 2).map((r, i) => (
-                    <div key={`${order.id}-${i}`} className="px-4">
-                      <LabResultRow
-                        name={r.test_name}
-                        value={r.value}
-                        unit={r.unit}
-                        refRange={r.reference_range}
-                        interpretation={(r.interpretation ?? 'normal') as 'normal' | 'high' | 'low' | 'critical'}
-                      />
+                  (order.health_lab_results ?? []).slice(0, 2).map(r => (
+                    <div key={r.id} className="px-4">
+                      {isPending(r)
+                        ? <LabResultRow name={r.test_name ?? labOrderTitle(order)} pending />
+                        : (
+                          <LabResultRow
+                            name={r.test_name}
+                            value={r.value}
+                            unit={r.unit}
+                            refRange={r.reference_range}
+                            interpretation={r.interpretation}
+                          />
+                        )}
                     </div>
                   ))
                 ).slice(0, 4)

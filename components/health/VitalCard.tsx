@@ -6,6 +6,7 @@ interface Props {
   value:    string | number
   unit?:    string
   trend?:   'up' | 'down' | 'stable'
+  /** Only when something assessed the value. Absent is neutral, never green. */
   status?:  'normal' | 'warning' | 'danger'
   subtitle?: string
   className?: string
@@ -16,9 +17,10 @@ const STATUS_COLORS = {
   warning: { bg: 'var(--h-warning-bg)', border: 'var(--h-warning)', value: 'var(--h-warning)' },
   danger:  { bg: 'var(--h-danger-bg)',  border: 'var(--h-danger)',  value: 'var(--h-danger)' },
 }
+const UNASSESSED = { bg: 'white', border: 'var(--bb-border)', value: 'var(--bb-ink)' }
 
-export function VitalCard({ label, value, unit, trend, status = 'normal', subtitle, className }: Props) {
-  const c = STATUS_COLORS[status]
+export function VitalCard({ label, value, unit, trend, status, subtitle, className }: Props) {
+  const c = status ? STATUS_COLORS[status] : UNASSESSED
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus
   const trendColor = trend === 'up' ? 'var(--h-danger)' : trend === 'down' ? 'var(--h-warning)' : 'var(--bb-ink-muted)'
 

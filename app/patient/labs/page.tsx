@@ -9,20 +9,19 @@ import { CardSkeleton } from '@/components/shared/LoadingSkeleton'
 import { Pagination } from '@/components/shared/Pagination'
 import { useHealthData } from '@/lib/hooks/useHealthData'
 import { formatDate } from '@/lib/utils/formatters'
-import type { LabInterpretation } from '@/lib/utils/health'
-
-interface LabResult { test_name: string; value: string; unit: string; reference_range?: string; interpretation?: string; comment?: string }
-interface LabOrder { id: string; test_name: string; status: string; ordered_at: string; resulted_at?: string; lab_name?: string; results?: LabResult[] }
+import { isPending, labOrderTitle, type LabOrder } from '@/lib/utils/results'
 
 export default function LabsPage() {
   const [offset, setOffset] = useState(0)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const LIMIT = 10
-  const { data, isLoading } = useHealthData<{ orders: LabOrder[]; count: number }>('/health/labs', { limit: LIMIT, offset })
+  const { data, isLoading } = useHealthData<{ orders: LabOrder[]; total: number }>('/health/labs', { limit: LIMIT, offset })
   const orders = data?.orders ?? []
-  const total  = data?.count ?? 0
+  const total  = data?.total ?? 0
 
-  const hasCritical = orders.some(o => o.results?.some(r => r.interpretation === 'critical'))
+  // Released results only: a pending one carries no interpretation to read.
+  const hasCritical = orders.some(o => (o.health_lab_results ?? []).some(r =>
+    !isPending(r) && (r.interpretation === 'critical' || r.is_critical === true)))
 
   return (
     <div className="space-y-5">
@@ -52,9 +51,9 @@ export default function LabsPage() {
                         <FlaskConical size={16} color="var(--h-warning)" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-[var(--bb-ink)]">{order.test_name}</p>
+                        <p className="text-[14px] font-semibold text-[var(--bb-ink)]">{labOrderTitle(order)}</p>
                         <p className="text-[11px] text-[var(--bb-ink-muted)]">
-                          {order.lab_name && `${order.lab_name} · `}
+                          {order.lab?.name && `${order.lab.name} · `}
                           {order.resulted_at ? `Resulted ${formatDate(order.resulted_at)}` : `Ordered ${formatDate(order.ordered_at)}`}
                         </p>
                       </div>
@@ -64,19 +63,21 @@ export default function LabsPage() {
                       {expanded[order.id] ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                     </div>
                   </button>
-                  {expanded[order.id] && order.results && order.results.length > 0 && (
+                  {expanded[order.id] && (order.health_lab_results ?? []).length > 0 && (
                     <div className="px-4 pb-4">
-                      {order.results.map((r, i) => (
-                        <LabResultRow
-                          key={i}
-                          name={r.test_name}
-                          value={r.value}
-                          unit={r.unit}
-                          refRange={r.reference_range}
-                          interpretation={(r.interpretation ?? 'normal') as LabInterpretation}
-                          comment={r.comment}
-                        />
-                      ))}
+                      {(order.health_lab_results ?? []).map(r => isPending(r)
+                        ? <LabResultRow key={r.id} name={r.test_name ?? labOrderTitle(order)} pending />
+                        : (
+                          <LabResultRow
+                            key={r.id}
+                            name={r.test_name}
+                            value={r.value}
+                            unit={r.unit}
+                            refRange={r.reference_range}
+                            interpretation={r.interpretation}
+                            comment={r.note}
+                          />
+                        ))}
                     </div>
                   )}
                 </div>
