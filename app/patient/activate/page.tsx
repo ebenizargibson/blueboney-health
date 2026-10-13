@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Heart, CheckCircle, ArrowRight } from 'lucide-react'
 import { patientApi } from '@/lib/api'
+import { refusalIn, reportAccessRefused } from '@/lib/accessRefused'
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 
@@ -42,7 +43,11 @@ export default function ActivatePage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Activation failed. Please try again.'); setLoading(false); return }
+      if (!res.ok) {
+        const refusal = refusalIn(res.status, data)
+        if (refusal) { reportAccessRefused(refusal); setLoading(false); return }
+        setError(data.message ?? 'Activation failed. Please try again.'); setLoading(false); return
+      }
       router.push('/patient')
     } catch {
       setError('Network error. Please try again.')
