@@ -119,7 +119,7 @@ export default function RecordsPage() {
                             name=""
                             value={value}
                             unit={o.value_unit}
-                            interpretation={o.interpretation as 'normal' | 'high' | 'low' | 'critical' | undefined}
+                            interpretation={o.interpretation}
                             compact
                           />
                         </div>

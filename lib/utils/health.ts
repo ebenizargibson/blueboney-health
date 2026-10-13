@@ -1,21 +1,24 @@
-// Lab result reference ranges and interpretation helpers
+// Lab result interpretation display.
+//
+// An interpretation is shown only when the laboratory recorded one. A missing,
+// null or unrecognised value gets no badge at all: defaulting it to 'normal' would
+// tell a patient their result is fine when nobody said so, and a pending result
+// (which carries no interpretation) would read as good news.
 
-export type LabInterpretation = 'normal' | 'high' | 'low' | 'critical'
-
-export function interpretLab(value: number | null, low: number, high: number, critLow?: number, critHigh?: number): LabInterpretation {
-  if (value === null) return 'normal'
-  if (critLow !== undefined && value < critLow) return 'critical'
-  if (critHigh !== undefined && value > critHigh) return 'critical'
-  if (value < low) return 'low'
-  if (value > high) return 'high'
-  return 'normal'
-}
+/** The values health_lab_results.interpretation may hold (its CHECK constraint). */
+export type LabInterpretation = 'normal' | 'abnormal' | 'high' | 'low' | 'critical'
 
 export const LAB_COLORS: Record<LabInterpretation, { bg: string; text: string; label: string; indicator: string }> = {
   normal:   { bg: 'var(--h-success-bg)', text: 'var(--h-success)',  label: 'Normal',   indicator: '●' },
+  abnormal: { bg: 'var(--h-danger-bg)',  text: 'var(--h-danger)',   label: 'Abnormal', indicator: '!' },
   high:     { bg: 'var(--h-danger-bg)',  text: 'var(--h-danger)',   label: 'High',     indicator: '↑' },
   low:      { bg: 'var(--h-warning-bg)', text: 'var(--h-warning)',  label: 'Low',      indicator: '↓' },
   critical: { bg: 'var(--h-critical-bg)',text: 'var(--h-critical)', label: 'Critical', indicator: '!!' },
+}
+
+/** The recorded interpretation if it is one we can label, otherwise null. Never a default. */
+export function labInterpretation(raw: unknown): LabInterpretation | null {
+  return typeof raw === 'string' && Object.prototype.hasOwnProperty.call(LAB_COLORS, raw) ? raw as LabInterpretation : null
 }
 
 export const APPOINTMENT_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
