@@ -132,6 +132,14 @@ export const patientApi = {
   updateReminder:    (id: string, d: unknown) => patch(`/health/wellness/medication-reminders/${id}`, d),
 }
 
+/**
+ * The backend API base the BROWSER may call, for the sign-in code step only
+ * (e.g. https://blueboney.vercel.app/api). A build-time setting; unset, that step
+ * goes through this portal's server as before. Nothing else may use it: every other
+ * call carries a session and goes through /api/proxy.
+ */
+const SIGNIN_API = process.env.NEXT_PUBLIC_SIGNIN_API_URL?.replace(/\/$/, '')
+
 // Portal auth calls (not proxied — hit portal API directly)
 export const portalAuth = {
   login:     (phone: string, password: string) =>
@@ -140,6 +148,27 @@ export const portalAuth = {
   verifyOtp: (temp_token: string, code: string) =>
     fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'verify_otp', temp_token, code }) }).then(r => r.json()),
+  // Health record sign-in (P2): no Blue Boney account.
+  claimStart: async (d: { uhr_number: string; date_of_birth: string } | { phone: string; date_of_birth: string }) => {
+    // The code step goes from the browser straight to the backend when
+    // NEXT_PUBLIC_SIGNIN_API_URL is set, so the backend's per-address limit counts
+    // the patient's address. Through this portal's server, on Vercel, every patient
+    // arrives from the portal's address and shares one limit (blueboney#96 D-P2-6).
+    // It carries nothing secret: the step is public and answers the same whatever
+    // happened. Verifying the code stays on the server, which sets the cookie.
+    if (SIGNIN_API) {
+      const r = await fetch(`${SIGNIN_API}/health/patient-auth/start`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d),
+      })
+      const data = await r.json().catch(() => ({}))
+      return r.ok ? { challenge_id: data.challenge_id, detail: data.detail } : { error: data.error ?? 'request_failed' }
+    }
+    return fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'claim_start', ...d }) }).then(r => r.json())
+  },
+  claimVerify: (challenge_id: string, code: string) =>
+    fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'claim_verify', challenge_id, code }) }).then(r => r.json()),
   logout:    () =>
     fetch('/api/logout', { method: 'POST' }).then(r => r.json()),
   session:   () =>

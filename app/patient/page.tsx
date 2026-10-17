@@ -8,12 +8,24 @@ import { LabResultRow } from '@/components/health/LabResultRow'
 import { InsightCard } from '@/components/health/InsightCard'
 import { HealthAlertBanner } from '@/components/health/HealthAlertBanner'
 import { DashboardSkeleton } from '@/components/shared/LoadingSkeleton'
+import { HealthRecordHome } from '@/components/health/HealthRecordHome'
 import { useHealthData } from '@/lib/hooks/useHealthData'
 import { usePatientSession } from '@/lib/hooks/usePatientSession'
 import { formatCurrency, formatRelative } from '@/lib/utils/formatters'
 import { isPending, labOrderTitle, type LabOrder } from '@/lib/utils/results'
 
+/**
+ * A health-record sign-in (P2, no banking account) gets its own home: every
+ * request the banking dashboard makes reads a banking session.
+ */
 export default function DashboardPage() {
+  const { session, loading } = usePatientSession()
+  if (loading || !session) return <DashboardSkeleton />
+  if (session.kind === 'health') return <HealthRecordHome patientId={session.healthPatientId} />
+  return <BankingDashboard />
+}
+
+function BankingDashboard() {
   const router = useRouter()
   const { session } = usePatientSession()
   const { data: status, isLoading } = useHealthData<{ activated: boolean; profile?: { first_name?: string } }>('/health/status')

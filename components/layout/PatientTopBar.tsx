@@ -62,7 +62,7 @@ export function PatientTopBar({ session, unreadMessages = 0, sidebarCollapsed }:
             </div>
             <div className="hidden sm:block text-left">
               <p className="text-[13px] font-semibold text-[var(--bb-ink)] leading-none">{session.fullName}</p>
-              <p className="text-[10px] text-[var(--bb-ink-muted)] mt-0.5 capitalize">{session.tier} Plan</p>
+              <p className="text-[10px] text-[var(--bb-ink-muted)] mt-0.5 capitalize">{session.kind === 'banking' ? `${session.tier} Plan` : 'Health record'}</p>
             </div>
             <ChevronDown size={13} className="text-[var(--bb-ink-muted)] hidden sm:block" />
           </button>
@@ -73,7 +73,7 @@ export function PatientTopBar({ session, unreadMessages = 0, sidebarCollapsed }:
               <div className="absolute right-0 top-11 w-52 bg-white rounded-[12px] border border-[var(--bb-border)] shadow-[var(--shadow-lg)] z-20 py-1 overflow-hidden">
                 <div className="px-4 py-3 border-b border-[var(--bb-border)]">
                   <p className="text-[13px] font-semibold text-[var(--bb-ink)]">{session.fullName}</p>
-                  <p className="text-[11px] text-[var(--bb-ink-muted)]">{session.phone}</p>
+                  <p className="text-[11px] text-[var(--bb-ink-muted)]">{session.kind === 'banking' ? session.phone : 'Signed in with your health record'}</p>
                 </div>
                 <Link href="/patient/settings" onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[var(--bb-ink)] hover:bg-[var(--bb-bg2)] transition-colors">
