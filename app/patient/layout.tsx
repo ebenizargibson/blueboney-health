@@ -7,6 +7,7 @@ import { usePatientSession } from '@/lib/hooks/usePatientSession'
 import { useHealthData } from '@/lib/hooks/useHealthData'
 import { AccessRefused } from '@/components/health/AccessRefused'
 import { onAccessRefused, type AccessRefusal, type HealthRequestError } from '@/lib/accessRefused'
+import { HealthOnlyShell } from '@/components/layout/HealthOnlyShell'
 
 export default function PatientLayout({ children }: { children: React.ReactNode }) {
   const { session, loading } = usePatientSession()
@@ -18,20 +19,23 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
   // Asked before any page renders, so a refused account never sees the
   // activation form or a dashboard flash first.
+  // A health-record sign-in has no banking account, so no activation to ask about
+  // (/health/status reads the banking session) and no banking-keyed messages yet.
+  const banking = session?.kind === 'banking'
   const { error: statusError, isLoading: statusLoading } = useHealthData<{ activated: boolean }>(
-    session ? '/health/status' : null,
+    banking ? '/health/status' : null,
   )
   const statusRefusal = (statusError as HealthRequestError | undefined)?.refusal ?? null
   const refusal = refused ?? statusRefusal
 
   const { data: msgData } = useHealthData<{ threads: { unread_count?: number }[] }>(
-    session && !statusLoading && !refusal ? '/health/messages/threads' : null,
+    banking && !statusLoading && !refusal ? '/health/messages/threads' : null,
   )
   const unreadMessages = (msgData?.threads ?? []).reduce((n, t) => n + (t.unread_count ?? 0), 0)
 
   if (refusal) return <AccessRefused refusal={refusal} />
 
-  if (loading || (session && statusLoading)) {
+  if (loading || (banking && statusLoading)) {
     return (
       <div className="min-h-screen bg-[var(--bb-bg)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -43,6 +47,8 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   }
 
   if (!session) return null // usePatientSession redirects to /login
+
+  if (session.kind === 'health') return <HealthOnlyShell fullName={session.fullName}>{children}</HealthOnlyShell>
 
   return (
     <div className="min-h-screen bg-[var(--bb-bg)]">

@@ -4,7 +4,9 @@ import { cookies } from 'next/headers'
 const COOKIE = 'patient_portal_token'
 const EXPIRY_SECONDS = 60 * 60 * 8 // 8 hours
 
-export interface PatientSession {
+/** Signed in with a Blue Boney (banking) account; health calls are exchanged for a health session. */
+export interface BankingPatientSession {
+  kind?:      'banking'
   userId:     string
   fullName:   string
   phone:      string
@@ -12,6 +14,21 @@ export interface PatientSession {
   kycStatus:  string
   token:      string  // Blue Boney session token (forwarded as Authorization: Bearer)
 }
+
+/**
+ * Signed in to the chart a clinic registered, by a code to the phone the clinic
+ * recorded (P2). There is no banking account behind it: only the health session,
+ * forwarded as X-Health-Token, and only to health routes.
+ */
+export interface HealthOnlySession {
+  kind:            'health'
+  healthPatientId: string
+  fullName:        string
+  healthToken:     string
+  expiresAt:       string
+}
+
+export type PatientSession = BankingPatientSession | HealthOnlySession
 
 function secret() {
   const s = process.env.PATIENT_JWT_SECRET

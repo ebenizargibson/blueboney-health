@@ -140,6 +140,13 @@ export const portalAuth = {
   verifyOtp: (temp_token: string, code: string) =>
     fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'verify_otp', temp_token, code }) }).then(r => r.json()),
+  // Health record sign-in (P2): no Blue Boney account.
+  claimStart:  (d: { uhr_number: string; date_of_birth: string } | { phone: string; date_of_birth: string }) =>
+    fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'claim_start', ...d }) }).then(r => r.json()),
+  claimVerify: (challenge_id: string, code: string) =>
+    fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'claim_verify', challenge_id, code }) }).then(r => r.json()),
   logout:    () =>
     fetch('/api/logout', { method: 'POST' }).then(r => r.json()),
   session:   () =>

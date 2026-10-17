@@ -3,9 +3,11 @@ import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Heart, Phone, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { portalAuth } from '@/lib/api'
+import { HealthRecordSignIn } from '@/components/auth/HealthRecordSignIn'
 
 function LoginForm() {
   const [step, setStep] = useState<'credentials' | 'otp'>('credentials')
+  const [mode, setMode] = useState<'account' | 'record'>('account')
   const [phone,     setPhone]     = useState('')
   const [password,  setPassword]  = useState('')
   const [showPw,    setShowPw]    = useState(false)
@@ -78,6 +80,9 @@ function LoginForm() {
             </div>
           </div>
 
+          {mode === 'record' ? (
+            <HealthRecordSignIn from={from} onBack={() => setMode('account')} />
+          ) : (<>
           {step === 'credentials' ? (
             <>
               <h2 className="text-[22px] font-bold text-[var(--bb-ink)] mb-6">Sign In</h2>
@@ -154,6 +159,13 @@ function LoginForm() {
               ← Back to login
             </button>
           )}
+          {step === 'credentials' && (
+            <button onClick={() => { setMode('record'); setError('') }}
+              className="w-full mt-3 text-[13px] font-semibold text-[var(--h-teal)] hover:underline py-2">
+              Registered at a clinic? Sign in with your health record
+            </button>
+          )}
+          </>)}
         </div>
 
         <p className="text-center text-[12px] text-[var(--bb-ink-muted)] mt-5">
