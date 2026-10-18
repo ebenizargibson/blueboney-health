@@ -118,21 +118,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ challenge_id: data.challenge_id, detail: data.detail })
     }
 
-    // Step 2: the code. A health session comes back; the cookie carries it.
+    // Step 2: the code, then the PIN (set the first time, entered after), on one
+    // challenge. Only the last step returns a health session; the cookie carries it.
     if (action === 'claim_verify') {
-      const { challenge_id, code } = body as Record<string, string | undefined>
-      if (!challenge_id || !code) return NextResponse.json({ error: 'challenge_id and code required' }, { status: 400 })
+      const { challenge_id, code, pin, new_pin } = body as Record<string, string | undefined>
+      const step = code ? { code } : pin ? { pin } : new_pin ? { new_pin } : null
+      if (!challenge_id || !step) return NextResponse.json({ error: 'challenge_id and a code or PIN required' }, { status: 400 })
       const upstream = await fetch(`${BACKEND}/health/patient-auth/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challenge_id, code }),
+        body: JSON.stringify({ challenge_id, ...step }),
       })
       const data = await upstream.json().catch(() => ({}))
       if (!upstream.ok) {
         // A refusal keeps its message and reference; everything else keeps its code.
-        return NextResponse.json(data?.code === 'HEALTH_ACCESS_REFUSED' ? data : { error: data.error ?? 'invalid_code', detail: data.detail },
+        return NextResponse.json(data?.code === 'HEALTH_ACCESS_REFUSED' ? data
+          : { error: data.error ?? 'invalid_code', problem: data.problem, detail: data.detail },
           { status: upstream.status })
       }
+      if (data.next === 'set_pin' || data.next === 'enter_pin') return NextResponse.json({ next: data.next })
       const me = await fetch(`${BACKEND}/health/patient/me`, { headers: { 'X-Health-Token': data.health_token } })
       const meData = await me.json().catch(() => null)
       const name = meData?.patient ? `${meData.patient.given_name} ${meData.patient.family_name}`.trim() : 'Patient'

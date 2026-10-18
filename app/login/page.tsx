@@ -2,7 +2,7 @@
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Heart, Phone, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
-import { portalAuth } from '@/lib/api'
+import { portalAuth, PATIENT_SIGNIN_ON } from '@/lib/api'
 import { HealthRecordSignIn } from '@/components/auth/HealthRecordSignIn'
 
 function LoginForm() {
@@ -80,7 +80,7 @@ function LoginForm() {
             </div>
           </div>
 
-          {mode === 'record' ? (
+          {mode === 'record' && PATIENT_SIGNIN_ON ? (
             <HealthRecordSignIn from={from} onBack={() => setMode('account')} />
           ) : (<>
           {step === 'credentials' ? (
@@ -159,7 +159,7 @@ function LoginForm() {
               ← Back to login
             </button>
           )}
-          {step === 'credentials' && (
+          {step === 'credentials' && PATIENT_SIGNIN_ON && (
             <button onClick={() => { setMode('record'); setError('') }}
               className="w-full mt-3 text-[13px] font-semibold text-[var(--h-teal)] hover:underline py-2">
               Registered at a clinic? Sign in with your health record

@@ -7,15 +7,19 @@ import { portalAuth } from '@/lib/api'
 /**
  * Sign in with the health record a clinic registered (P2), no Blue Boney account
  * needed: the record number from the slip (or the phone the clinic recorded) and
- * the date of birth, then a code sent to that phone.
+ * the date of birth send a code to that phone. Then a PIN (D7 as changed
+ * 2026-10-18): the first time the patient sets one; every time after, the code
+ * and the PIN sign them in, never the code and the birth date.
  */
 export function HealthRecordSignIn({ onBack, from }: { onBack: () => void; from: string }) {
   const [by, setBy]       = useState<'record' | 'phone'>('record')
   const [value, setValue] = useState('')
   const [dob, setDob]     = useState('')
-  const [step, setStep]   = useState<'details' | 'code'>('details')
+  const [step, setStep]   = useState<'details' | 'code' | 'set_pin' | 'enter_pin'>('details')
   const [challenge, setChallenge] = useState('')
   const [code, setCode]   = useState('')
+  const [pin, setPin]     = useState('')
+  const [pin2, setPin2]   = useState('')
   const [note, setNote]   = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy]   = useState(false)
@@ -31,21 +35,30 @@ export function HealthRecordSignIn({ onBack, from }: { onBack: () => void; from:
     setBusy(false)
   }
 
-  const signIn = async () => {
+  const failure = (res: { error?: string; code?: string; message?: string; reference?: string; detail?: string }) =>
+    res.error === 'too_many_attempts' ? 'Too many incorrect attempts. Try again in half an hour.'
+    : res.error === 'desk_required'   ? 'This record can only be opened at your clinic for now. Please visit the desk.'
+    : res.code === 'HEALTH_ACCESS_REFUSED' ? `${res.message} Reference: ${res.reference}`
+    : res.error === 'pin_rejected'    ? (res.detail ?? 'Choose a different PIN.')
+    : res.error === 'wrong_pin'       ? 'That PIN is not right.'
+    : step === 'code' ? 'That code is not right, or it has expired.'
+    : 'That did not work. Start again from your details.'
+
+  const submit = async () => {
+    if (step === 'set_pin' && pin !== pin2) { setError('The two PINs are not the same.'); return }
     setBusy(true); setError('')
     try {
-      const res = await portalAuth.claimVerify(challenge, code)
+      const res = await portalAuth.claimVerify(challenge,
+        step === 'code' ? { code } : step === 'set_pin' ? { new_pin: pin } : { pin })
       if (res.success) { router.push(from); return }
-      setError(
-        res.error === 'too_many_attempts' ? 'Too many incorrect codes. Try again in half an hour.'
-        : res.error === 'desk_required'   ? 'This record can only be opened at your clinic for now. Please visit the desk.'
-        : res.code === 'HEALTH_ACCESS_REFUSED' ? `${res.message} Reference: ${res.reference}`
-        : 'That code is not right, or it has expired.')
+      if (res.next === 'set_pin' || res.next === 'enter_pin') { setStep(res.next); setPin(''); setPin2('') }
+      else setError(failure(res))
     } catch { setError('Network error. Please try again.') }
     setBusy(false)
   }
 
   const input = 'w-full h-11 px-3 rounded-[10px] border border-[var(--bb-border)] bg-[var(--bb-bg)] text-[14px] text-[var(--bb-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--h-teal)]'
+  const digits = 'w-full h-14 rounded-[10px] border border-[var(--bb-border)] bg-[var(--bb-bg)] text-[28px] font-mono font-bold text-center tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-[var(--h-teal)]'
   const label = 'block text-[12px] font-semibold text-[var(--bb-ink-soft)] mb-1.5 uppercase tracking-wide'
 
   return (
@@ -73,14 +86,42 @@ export function HealthRecordSignIn({ onBack, from }: { onBack: () => void; from:
             <input id="hr-dob" className={input} type="date" value={dob} onChange={e => setDob(e.target.value)} />
           </div>
         </>
-      ) : (
+      ) : step === 'code' ? (
         <>
           <p className="text-[13px] text-[var(--bb-ink-soft)] mb-5">{note}</p>
           <div className="mb-6">
             <label className={label} htmlFor="hr-code">Code</label>
-            <input id="hr-code" inputMode="numeric" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="000000" onKeyDown={e => e.key === 'Enter' && code.length === 6 && signIn()}
-              className="w-full h-14 rounded-[10px] border border-[var(--bb-border)] bg-[var(--bb-bg)] text-[28px] font-mono font-bold text-center tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-[var(--h-teal)]" />
+            <input id="hr-code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000" onKeyDown={e => e.key === 'Enter' && code.length === 6 && submit()}
+              className={digits} />
+          </div>
+        </>
+      ) : step === 'set_pin' ? (
+        <>
+          <p className="text-[13px] text-[var(--bb-ink-soft)] mb-5">
+            Choose a 6-digit PIN. You will enter it, with a code we text you, every time you sign in.
+            Do not use your date of birth or your phone number.
+          </p>
+          <div className="mb-4">
+            <label className={label} htmlFor="hr-pin">New PIN</label>
+            <input id="hr-pin" type="password" inputMode="numeric" autoComplete="new-password" value={pin}
+              onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} className={digits} />
+          </div>
+          <div className="mb-6">
+            <label className={label} htmlFor="hr-pin2">Enter it again</label>
+            <input id="hr-pin2" type="password" inputMode="numeric" autoComplete="new-password" value={pin2}
+              onChange={e => setPin2(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onKeyDown={e => e.key === 'Enter' && pin.length === 6 && pin2.length === 6 && submit()} className={digits} />
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-[13px] text-[var(--bb-ink-soft)] mb-5">Enter your 6-digit PIN.</p>
+          <div className="mb-6">
+            <label className={label} htmlFor="hr-pin">PIN</label>
+            <input id="hr-pin" type="password" inputMode="numeric" autoComplete="current-password" value={pin}
+              onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onKeyDown={e => e.key === 'Enter' && pin.length === 6 && submit()} className={digits} />
           </div>
         </>
       )}
@@ -91,15 +132,18 @@ export function HealthRecordSignIn({ onBack, from }: { onBack: () => void; from:
         </div>
       )}
 
-      <button onClick={step === 'details' ? sendCode : signIn}
-        disabled={busy || (step === 'details' ? !value.trim() || !dob : code.length !== 6)}
+      <button onClick={step === 'details' ? sendCode : submit}
+        disabled={busy || (step === 'details' ? !value.trim() || !dob
+          : step === 'code' ? code.length !== 6
+          : step === 'set_pin' ? pin.length !== 6 || pin2.length !== 6
+          : pin.length !== 6)}
         className="w-full h-12 rounded-[10px] bg-[var(--h-teal)] text-white text-[15px] font-bold hover:bg-[var(--h-teal-hover)] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-        {busy ? 'Please wait...' : step === 'details' ? 'Send me a code' : 'Sign in'}
+        {busy ? 'Please wait...' : step === 'details' ? 'Send me a code' : step === 'code' ? 'Continue' : step === 'set_pin' ? 'Set PIN and sign in' : 'Sign in'}
         {!busy && <ArrowRight size={16} />}
       </button>
-      <button onClick={step === 'code' ? () => { setStep('details'); setCode(''); setError('') } : onBack}
+      <button onClick={step !== 'details' ? () => { setStep('details'); setCode(''); setPin(''); setPin2(''); setError('') } : onBack}
         className="w-full mt-3 text-[13px] text-[var(--bb-ink-soft)] hover:text-[var(--bb-ink)] py-2">
-        {step === 'code' ? '← Change details' : '← Sign in with a Blue Boney account instead'}
+        {step !== 'details' ? '← Start again' : '← Sign in with a Blue Boney account instead'}
       </button>
     </>
   )

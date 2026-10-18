@@ -140,6 +140,14 @@ export const patientApi = {
  */
 const SIGNIN_API = process.env.NEXT_PUBLIC_SIGNIN_API_URL?.replace(/\/$/, '')
 
+/**
+ * Health-record sign-in (P2) is offered only once NEXT_PUBLIC_SIGNIN_API_URL is
+ * set: the founder adds it when P2 is switched on (blueboney HEALTH_PATIENT_SIGNIN,
+ * off in production until SMS delivers). Unset, the login page does not show the
+ * option, so no patient is sent to a door that cannot text them a code.
+ */
+export const PATIENT_SIGNIN_ON = !!SIGNIN_API
+
 // Portal auth calls (not proxied — hit portal API directly)
 export const portalAuth = {
   login:     (phone: string, password: string) =>
@@ -166,9 +174,11 @@ export const portalAuth = {
     return fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'claim_start', ...d }) }).then(r => r.json())
   },
-  claimVerify: (challenge_id: string, code: string) =>
+  // The code first; the answer is { next: 'set_pin' | 'enter_pin' }, and the PIN
+  // follows on the same challenge (blueboney#96, D7 as changed 2026-10-18).
+  claimVerify: (challenge_id: string, step: { code: string } | { pin: string } | { new_pin: string }) =>
     fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'claim_verify', challenge_id, code }) }).then(r => r.json()),
+      body: JSON.stringify({ action: 'claim_verify', challenge_id, ...step }) }).then(r => r.json()),
   logout:    () =>
     fetch('/api/logout', { method: 'POST' }).then(r => r.json()),
   session:   () =>
