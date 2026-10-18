@@ -83,6 +83,8 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
 
   const body = ['GET', 'HEAD'].includes(req.method) ? undefined : await req.text()
 
+  if (session.kind === 'health') return healthOnly(req, session.healthToken, backendPath, url, body)
+
   const headers: Record<string, string> = {
     'Content-Type':  'application/json',
     'Authorization': `Bearer ${session.token}`,
@@ -125,6 +127,33 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
     }
   }
   return NextResponse.json(res.data, { status: res.status })
+}
+
+/**
+ * A patient signed in to their chart with no banking account (P2). Its health
+ * session goes as X-Health-Token, to health routes only, and nothing is exchanged.
+ *
+ * Some routes under /health still read only a banking session (/health/status,
+ * appointments, billing; they move in P4). They answer 401 for want of a banking
+ * token, and the client treats 401 as "signed out" and sends the patient to the
+ * login page, which would loop. So a 401 that is not the health session's own
+ * (health_session_expired, health_unauthorized, a re-home or an ended session)
+ * becomes 403 bank_account_required: that page needs a linked account.
+ */
+async function healthOnly(req: NextRequest, healthToken: string, backendPath: string, url: URL, body: string | undefined) {
+  if (!(backendPath.startsWith('health/') || backendPath.startsWith('uhr/'))) {
+    return NextResponse.json({ error: 'bank_account_required' }, { status: 403 })
+  }
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Health-Token': healthToken }
+  const idempotencyKey = req.headers.get('Idempotency-Key')
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
+  const upstream = await fetch(url.toString(), { method: req.method, headers, ...(body ? { body } : {}) })
+  const data = await upstream.json().catch(() => null) as { error?: string; code?: string } | null
+  if (upstream.status === 401) {
+    const own = typeof data?.error === 'string' && data.error.startsWith('health_')
+    if (!own) return NextResponse.json({ error: 'bank_account_required' }, { status: 403 })
+  }
+  return NextResponse.json(data, { status: upstream.status })
 }
 
 export const GET    = proxy
