@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
- * The patient portal holds no database token and subscribes to no table
- * (founder ruling D-A2-10, 2026-10-19: live updates go through the health API).
+ * The patient portal holds no database token and builds no Supabase client
+ * (founder rulings 2026-10-19: live updates go through the health API, and no app
+ * holds a database token, on either side).
  *
- * Fails on a postgres_changes subscription, a realtime.setAuth call, or a request
- * for a realtime token. A file that still builds a Supabase client for something
- * else is named, not passed over in silence.
+ * Fails on any import of @supabase/supabase-js, a postgres_changes subscription,
+ * a realtime.setAuth call, or a request for a realtime token. The last client,
+ * the telehealth page's public broadcast channel, was removed as a security fix.
  *
  * Run: node scripts/check-no-db-token.mjs
  */
@@ -23,16 +24,10 @@ if (!files.some(f => f.includes(join('app', 'patient', 'messages')))) {
   process.exit(2)
 }
 
-const bad = [], clients = []
-for (const f of files) {
-  const src = readFileSync(f, 'utf8')
-  if (/postgres_changes|realtime\.setAuth|realtime-token/.test(src)) bad.push(f)
-  else if (/@supabase\/supabase-js/.test(src)) clients.push(f)
-}
+const bad = files.filter(f => /@supabase\/supabase-js|postgres_changes|realtime\.setAuth|realtime-token|\.channel\(/.test(readFileSync(f, 'utf8')))
 if (bad.length) {
-  console.error('No-database-token check FAILED — these subscribe to the database or take a token for it:')
+  console.error('No-database-token check FAILED — these build a Supabase client, subscribe, or take a token:')
   for (const f of bad) console.error(`  ${f}`)
   process.exit(1)
 }
-console.log(`No-database-token check OK — ${files.length} files, none subscribes to a table or takes a database token.`)
-for (const f of clients) console.log(`  Still builds a Supabase client (not a table subscription; recorded): ${f}`)
+console.log(`No-database-token check OK — ${files.length} files; none builds a Supabase client or takes a database token.`)
