@@ -3,7 +3,6 @@ import { use, useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Send, Paperclip } from 'lucide-react'
 import Link from 'next/link'
 import { useHealthData } from '@/lib/hooks/useHealthData'
-import { useRealtimeMessages } from '@/lib/hooks/useRealtimeMessages'
 import { patientApi } from '@/lib/api'
 import { formatDateTime } from '@/lib/utils/formatters'
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -13,11 +12,9 @@ interface Thread { id: string; subject: string; thread_type?: string; status?: s
 
 export default function ThreadPage({ params }: { params: Promise<{ threadId: string }> }) {
   const { threadId } = use(params)
-  // Refresh every 15s. The realtime subscription below cannot deliver: its
-  // Supabase client is built with the anon key and no session is ever attached,
-  // so it subscribes as `anon` — and realtime honours RLS exactly as the REST
-  // API does, where anon reads no rows of health_messages. Verified against
-  // production: the channel reports SUBSCRIBED and no event ever arrives.
+  // Live updates come from the health API: the thread refreshes every 15s. No
+  // app holds a database token (founder ruling D-A2-10, 2026-10-19), so the
+  // realtime subscription this page used to open is gone.
   const { data, isLoading, mutate } = useHealthData<{ thread: Thread }>(
     `/health/messages/threads/${threadId}`,
     undefined,
@@ -39,10 +36,6 @@ export default function ThreadPage({ params }: { params: Promise<{ threadId: str
     if (messages.length > lastCount.current) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     lastCount.current = messages.length
   }, [messages])
-
-  useRealtimeMessages(threadId, (msg) => {
-    setMessages(prev => [...prev, msg as Message])
-  })
 
   const send = async () => {
     if (!body.trim() || sending) return
