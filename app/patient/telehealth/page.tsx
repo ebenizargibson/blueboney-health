@@ -38,7 +38,7 @@ function JoinCard({ s }: { s: TelehealthSession }) {
       <div className="mt-5 flex gap-3">
         <Link href={`/patient/telehealth/${s.id}`}
           className="flex-1 flex items-center justify-center gap-2 h-11 rounded-[10px] bg-[var(--h-teal)] text-white text-[14px] font-semibold hover:bg-[var(--h-teal-hover)] transition-colors">
-          <Video size={16} /> Join Now
+          <Video size={16} /> Visit details
         </Link>
       </div>
     </div>

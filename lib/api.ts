@@ -58,7 +58,6 @@ export const patientApi = {
   // Telehealth
   createSession:     (d: unknown)   => post('/health/telehealth/session', d),
   telehealthSession: (id: string)   => get(`/health/telehealth/session/${id}`),
-  endSession:        (id: string)   => post(`/health/telehealth/session/${id}/end`, {}),
 
   // Records
   encounters:        (p?: Record<string, string | number | undefined>) => get('/health/records/encounters', p),
