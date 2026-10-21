@@ -142,20 +142,14 @@ const SIGNIN_API = process.env.NEXT_PUBLIC_SIGNIN_API_URL?.replace(/\/$/, '')
 /**
  * Health-record sign-in (P2) is offered only once NEXT_PUBLIC_SIGNIN_API_URL is
  * set: the founder adds it when P2 is switched on (blueboney HEALTH_PATIENT_SIGNIN,
- * off in production until SMS delivers). Unset, the login page does not show the
- * option, so no patient is sent to a door that cannot text them a code.
+ * off in production until SMS delivers). Unset, the login page says sign-in is
+ * closed, so no patient is sent to a door that cannot text them a code.
  */
 export const PATIENT_SIGNIN_ON = !!SIGNIN_API
 
 // Portal auth calls (not proxied — hit portal API directly)
 export const portalAuth = {
-  login:     (phone: string, password: string) =>
-    fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'login', phone, password }) }).then(r => r.json()),
-  verifyOtp: (temp_token: string, code: string) =>
-    fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'verify_otp', temp_token, code }) }).then(r => r.json()),
-  // Health record sign-in (P2): no Blue Boney account.
+  // Health record sign-in (P2): no Blue Boney account. The only patient sign-in.
   claimStart: async (d: { uhr_number: string; date_of_birth: string } | { phone: string; date_of_birth: string }) => {
     // The code step goes from the browser straight to the backend when
     // NEXT_PUBLIC_SIGNIN_API_URL is set, so the backend's per-address limit counts

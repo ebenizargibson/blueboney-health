@@ -4,21 +4,13 @@ import { cookies } from 'next/headers'
 const COOKIE = 'patient_portal_token'
 const EXPIRY_SECONDS = 60 * 60 * 8 // 8 hours
 
-/** Signed in with a Blue Boney (banking) account; health calls are exchanged for a health session. */
-export interface BankingPatientSession {
-  kind?:      'banking'
-  userId:     string
-  fullName:   string
-  phone:      string
-  tier:       string
-  kycStatus:  string
-  token:      string  // Blue Boney session token (forwarded as Authorization: Bearer)
-}
-
 /**
  * Signed in to the chart a clinic registered, by a code to the phone the clinic
  * recorded (P2). There is no banking account behind it: only the health session,
  * forwarded as X-Health-Token, and only to health routes.
+ *
+ * The portal's only session. The banking sign-in, and the exchange of its token
+ * for a health session, were retired in A2-2a (D-A2-3).
  */
 export interface HealthOnlySession {
   kind:            'health'
@@ -28,7 +20,7 @@ export interface HealthOnlySession {
   expiresAt:       string
 }
 
-export type PatientSession = BankingPatientSession | HealthOnlySession
+export type PatientSession = HealthOnlySession
 
 function secret() {
   const s = process.env.PATIENT_JWT_SECRET
@@ -47,7 +39,8 @@ export async function signPatientToken(session: PatientSession): Promise<string>
 export async function verifyPatientToken(token: string): Promise<PatientSession | null> {
   try {
     const { payload } = await jwtVerify(token, secret())
-    return payload as unknown as PatientSession
+    // A cookie the banking sign-in set before it was retired is not a session.
+    return payload.kind === 'health' ? payload as unknown as PatientSession : null
   } catch {
     return null
   }

@@ -13,7 +13,7 @@ const SETTING_LINKS = [
 
 export default function SettingsPage() {
   const { session } = usePatientSession()
-  const [form, setForm]     = useState({ full_name: session?.fullName ?? '', phone: session?.kind === 'banking' ? session.phone : '' })
+  const [form, setForm]     = useState({ full_name: session?.fullName ?? '', phone: '' })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved]   = useState(false)
   const [error, setError]   = useState('')
@@ -44,7 +44,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <p className="text-[16px] font-bold text-[var(--bb-ink)]">{session?.fullName}</p>
-            <p className="text-[12px] text-[var(--bb-ink-muted)]">{session?.kind === 'banking' ? `KYC: ${session.kycStatus} · Tier ${session.tier}` : 'Signed in with your health record'}</p>
+            <p className="text-[12px] text-[var(--bb-ink-muted)]">Signed in with your health record</p>
           </div>
         </div>
 

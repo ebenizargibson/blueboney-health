@@ -9,7 +9,9 @@
  * chart session and one live banking session.
  *
  * Old code fails: middleware.ts opened any patient page when a
- * patient_portal_token cookie was present, whatever its value.
+ * patient_portal_token cookie was present, whatever its value. Then, until A2-2a
+ * retired the banking sign-in (D-A2-3), a banking cookie whose session was live
+ * opened a page; now only the chart session does.
  *
  * Run: node --test scripts/test/session-gate.test.mjs
  */
@@ -67,10 +69,9 @@ const page = cookie => new NextRequest('https://health.example/patient/dashboard
 const opens = res => res.headers.get('x-middleware-next') === '1'
 const toLogin = res => [302, 307].includes(res.status) && new URL(res.headers.get('location') ?? '', 'https://x').pathname === '/login'
 
-test('a live chart session and a live banking session open the page (control)', async () => {
+test('a live chart session opens the page (control)', async () => {
   assert.ok(opens(await gate(page(await sign({ kind: 'health', healthPatientId: 'p', fullName: 'P', healthToken: 'live-health', expiresAt: '' })))))
-  assert.ok(opens(await gate(page(await sign({ kind: 'banking', userId: 'u', fullName: 'U', phone: '', tier: '', kycStatus: '', token: 'live-banking' })))))
-  assert.ok(asked.some(u => u.endsWith('/health/session')) && asked.some(u => u.endsWith('/health/status')), 'the API was not asked')
+  assert.ok(asked.some(u => u.endsWith('/health/session')), 'the API was not asked')
 })
 
 test('refused, and sent to sign in', async () => {
@@ -80,11 +81,13 @@ test('refused, and sent to sign in', async () => {
     'a token signed with another secret': await sign({ kind: 'health', healthToken: 'live-health' }, 'not-the-portal-secret'),
     'a signed token whose chart session has ended': await sign({ kind: 'health', healthPatientId: 'p', fullName: 'P', healthToken: 'ended', expiresAt: '' }),
     'a signed token whose banking session has ended': await sign({ kind: 'banking', userId: 'u', fullName: 'U', phone: '', tier: '', kycStatus: '', token: 'ended' }),
+    'a signed banking cookie whose session is live (A2-2a)': await sign({ kind: 'banking', userId: 'u', fullName: 'U', phone: '', tier: '', kycStatus: '', token: 'live-banking' }),
   }
   for (const [why, cookie] of Object.entries(cases)) {
     const res = await gate(page(cookie))
     assert.ok(toLogin(res), `${why}: status ${res.status}, location ${res.headers.get('location')}`)
   }
+  assert.ok(!asked.some(u => u.endsWith('/health/status')), 'the gate asked about a banking session')
 })
 
 test('refused when the API cannot be reached', async () => {
