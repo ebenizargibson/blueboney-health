@@ -4,12 +4,11 @@ import { portalAuth } from '@/lib/api'
 import { useRouter } from 'next/navigation'
 
 /**
- * 'banking': signed in with a Blue Boney account. 'health': signed in to the chart a
- * clinic registered, with no banking account (P2); only health pages work for it.
+ * Signed in to the chart a clinic registered, with no banking account (P2); only
+ * health pages work for it. The portal's only session since the banking sign-in
+ * was retired (A2-2a).
  */
-export type ClientSession =
-  | { kind: 'banking'; userId: string; fullName: string; phone: string; tier: string; kycStatus: string }
-  | { kind: 'health'; healthPatientId: string; fullName: string }
+export type ClientSession = { kind: 'health'; healthPatientId: string; fullName: string }
 
 export function usePatientSession() {
   const [session, setSession] = useState<ClientSession | null | undefined>(undefined)

@@ -1,41 +1,20 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { PatientSidebar } from '@/components/layout/PatientSidebar'
-import { PatientTopBar } from '@/components/layout/PatientTopBar'
-import { MobileNav } from '@/components/layout/MobileNav'
 import { usePatientSession } from '@/lib/hooks/usePatientSession'
-import { useHealthData } from '@/lib/hooks/useHealthData'
 import { AccessRefused } from '@/components/health/AccessRefused'
-import { onAccessRefused, type AccessRefusal, type HealthRequestError } from '@/lib/accessRefused'
+import { onAccessRefused, type AccessRefusal } from '@/lib/accessRefused'
 import { HealthOnlyShell } from '@/components/layout/HealthOnlyShell'
 
 export default function PatientLayout({ children }: { children: React.ReactNode }) {
   const { session, loading } = usePatientSession()
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [refused, setRefused] = useState<AccessRefusal | null>(null)
 
   // Any request that comes back refused, on any page, replaces the patient area.
   useEffect(() => onAccessRefused(r => setRefused(prev => prev ?? r)), [])
 
-  // Asked before any page renders, so a refused account never sees the
-  // activation form or a dashboard flash first.
-  // A health-record sign-in has no banking account, so no activation to ask about
-  // (/health/status reads the banking session) and no banking-keyed messages yet.
-  const banking = session?.kind === 'banking'
-  const { error: statusError, isLoading: statusLoading } = useHealthData<{ activated: boolean }>(
-    banking ? '/health/status' : null,
-  )
-  const statusRefusal = (statusError as HealthRequestError | undefined)?.refusal ?? null
-  const refusal = refused ?? statusRefusal
+  if (refused) return <AccessRefused refusal={refused} />
 
-  const { data: msgData } = useHealthData<{ threads: { unread_count?: number }[] }>(
-    banking && !statusLoading && !refusal ? '/health/messages/threads' : null,
-  )
-  const unreadMessages = (msgData?.threads ?? []).reduce((n, t) => n + (t.unread_count ?? 0), 0)
-
-  if (refusal) return <AccessRefused refusal={refusal} />
-
-  if (loading || (banking && statusLoading)) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[var(--bb-bg)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -48,35 +27,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
   if (!session) return null // usePatientSession redirects to /login
 
-  if (session.kind === 'health') return <HealthOnlyShell fullName={session.fullName}>{children}</HealthOnlyShell>
-
-  return (
-    <div className="min-h-screen bg-[var(--bb-bg)]">
-      {/* Desktop sidebar */}
-      <div className="hidden md:block">
-        <PatientSidebar
-          collapsed={sidebarCollapsed}
-          onCollapse={setSidebarCollapsed}
-          unreadMessages={unreadMessages}
-        />
-      </div>
-
-      {/* Top bar */}
-      <PatientTopBar session={session} sidebarCollapsed={sidebarCollapsed} />
-
-      {/* Page content — margin tracks sidebar width on md+; no margin on mobile */}
-      <main
-        className={`pt-16 pb-20 md:pb-6 transition-all duration-200 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-[260px]'}`}
-      >
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
-          {children}
-        </div>
-      </main>
-
-      {/* Mobile bottom nav */}
-      <div className="md:hidden">
-        <MobileNav />
-      </div>
-    </div>
-  )
+  // The chart session (P2) is the only session: the banking shell went with the
+  // banking sign-in (A2-2a).
+  return <HealthOnlyShell fullName={session.fullName}>{children}</HealthOnlyShell>
 }

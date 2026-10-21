@@ -11,7 +11,7 @@ import { portalAuth } from '@/lib/api'
  * 2026-10-18): the first time the patient sets one; every time after, the code
  * and the PIN sign them in, never the code and the birth date.
  */
-export function HealthRecordSignIn({ onBack, from }: { onBack: () => void; from: string }) {
+export function HealthRecordSignIn({ from }: { from: string }) {
   const [by, setBy]       = useState<'record' | 'phone'>('record')
   const [value, setValue] = useState('')
   const [dob, setDob]     = useState('')
@@ -141,10 +141,12 @@ export function HealthRecordSignIn({ onBack, from }: { onBack: () => void; from:
         {busy ? 'Please wait...' : step === 'details' ? 'Send me a code' : step === 'code' ? 'Continue' : step === 'set_pin' ? 'Set PIN and sign in' : 'Sign in'}
         {!busy && <ArrowRight size={16} />}
       </button>
-      <button onClick={step !== 'details' ? () => { setStep('details'); setCode(''); setPin(''); setPin2(''); setError('') } : onBack}
-        className="w-full mt-3 text-[13px] text-[var(--bb-ink-soft)] hover:text-[var(--bb-ink)] py-2">
-        {step !== 'details' ? '← Start again' : '← Sign in with a Blue Boney account instead'}
-      </button>
+      {step !== 'details' && (
+        <button onClick={() => { setStep('details'); setCode(''); setPin(''); setPin2(''); setError('') }}
+          className="w-full mt-3 text-[13px] text-[var(--bb-ink-soft)] hover:text-[var(--bb-ink)] py-2">
+          ← Start again
+        </button>
+      )}
     </>
   )
 }
